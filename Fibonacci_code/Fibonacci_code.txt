@@ -1,0 +1,71 @@
+The task is to develop two functions to convert the contents of a file between UTF-8 coding and Fibonacci coding and vice versa.
+
+Characters are coded as numbers - indices into coding tables. Nowadays, the preferred coding table is UNICODE. The UNICODE coding table is big - it contains a total of 1048576+65536 code positions. If the characters are directly coded as indices, then one character occupies 4 bytes. However, most frequent characters are the characters with low index (e.g. ≤ 128, or ≤ 65536). This is the basic idea of UTF-8 where characters with low codes are encoded into one byte, whereas characters with high code occupy up to 4 bytes.
+
+UTF-8 code decreases the size of common text files, however, it is not optimal. One of UTF-8 design guidelines was simplified encoding/decoding. UTF-8 characters are aligned with bytes. This is practical, and it increases reading/writing speed. Space optimality, however, is not always met.
+
+There are other codes used to optimally code integer numbers. One example is Fibonacci code, a code that is based on Fibonacci sequence. Recall that Fibonacci code is sequence 1, 1, 2, 3, 5, 8, 13, ... where a number in the sequence is a sum of its two predecessors. A number coded in the Fibonacci code is coded as a sequence of bits. If a bit is set, then the corresponding number in the Fibonacci sequence is contributes to the coded number. For example number 9 can be coded as:
+
+                              1  1  2  3  5  8  ....
+  9 = 1 + 8                   1  0  0  0  0  1
+  9 = 1 + 8                   0  1  0  0  0  1
+  9 = 1 + 3 + 5               1  0  0  1  1
+  9 = 1 + 1 + 2 + 5           1  1  1  0  1
+  ...
+
+In general, there are many bit sequences that code the same number. We choose only the combinations where there are not duplicates (i.e. each Fibonacci sequence number occurs at most once, thus 1+1+2+5 is eliminated). Due to this restriction, we will only consider one number 1 in the Fibonacci sequence as only one can be used anyway.
+
+Second, we eliminate combinations where there are two or more consecutive numbers of the Fibonacci sequence (i.e. 1+3+5 is eliminated, 3 and 5 are adjacent in the sequence). The construction of the sequence permits this as the sum of two consecutive numbers is indeed the next member of the Fibonacci sequence (3+5 = 8, 8 is the next number in Fibonacci sequence).
+
+The two above restrictions lead to an unambiguous code. The table below shows the code for small integers:
+
+                              1  2  3  5  8
+  1 = 1                       1
+  2 = 2                       0  1
+  3 = 3                       0  0  1
+  4 = 1 + 3                   1  0  1
+  5 = 5                       0  0  0  1
+  6 = 1 + 5                   1  0  0  1
+  7 = 2 + 5                   0  1  0  1
+  8 = 8                       0  0  0  0  1
+  9 = 1 + 8                   1  0  0  0  1
+ 10 = 2 + 8                   0  1  0  0  1
+ 11 = 3 + 8                   0  0  1  0  1
+ 12 = 1 + 3 + 8               1  0  1  0  1
+ ...
+
+Integer numbers can be stored using Fibonacci code. Note that small numbers are coded in short bit sequences. There is a bit problem determining the end of a Fibonacci coded number in a bit stream. This problem is trivial if the number of bits is fixed (like 1/2/4/8 Byte integers). However, Fibonacci coding uses variable-length codes. Suppose bit sequence 00101. This can be interpreted as one Fibonacci coded number (11), or two Fibonacci coded numbers (3 and 2) if the bit sequence is split into 001 01.
+
+To find the boundaries, we add a marker to the bit stream. In the case of Fibonacci numbers, the marker is an extra 1 bit. Since all Fibonacci codes end with 1 and since there are no adjacent 1 in the middle of a code, the sequence of two 1 bits uniquely determines the boundary. Thus number 11 from the above example would be coded as 001011 whereas sequence (3,2) would be 0011011.
+
+Fibonacci code does not handle value of 0. To handle it, we increase all numbers by one before coding. Thus the coding table would finally be:
+
+                              1  2  3  5  8
+  0 ~ 1                       1  1
+  1 ~ 2                       0  1  1
+  2 ~ 3                       0  0  1  1
+  3 ~ 1 + 3                   1  0  1  1
+  4 ~ 5                       0  0  0  1  1
+  5 ~ 1 + 5                   1  0  0  1  1
+  6 ~ 2 + 5                   0  1  0  1  1
+  7 ~ 8                       0  0  0  0  1  1
+  8 ~ 1 + 8                   1  0  0  0  1  1
+  9 ~ 2 + 8                   0  1  0  0  1  1
+ 10 ~ 3 + 8                   0  0  1  0  1  1
+ 11 ~ 1 + 3 + 8               1  0  1  0  1  1
+ ...
+
+One more thing to fix is the padding. If the input consists of numbers 0, 5, and 10, then we need a total of 2+5+6 = 13 bits. However, complete bytes must be saved in files. Thus we add extra zero bits (up to 7 zero bits) to the end if the result is not byte-aligned. Since the sequence of zeros does not contain two consecutive 1 bits, the padding will not add any new coded character.
+
+Note: LSB stands for Least Significant Bit. In the example codes above, the notation was with LSB to the left as it is natural and the bit pattern follows the Fibonacci sequence. This is convenient when describing the code. However, when displaying the bit patterns as bytes, we automatically consider the LSB to the right (as with decimal numbers, least significant digits are on the right). Develop your program to pack the bits such that LSB is to the right.
+
+Example: numbers 0 5 10 coded using Fibonacci code:
+
+Character codes:          0   5      10
+Bit pattern:              11  10011  001011
+Concatenation:            1110011001011    
+Padding (bytes):          1110011001011000 
+Bytes (LSB to the left):  11100110   01011000
+Bytes (LSB to the right): 01100111   00011010
+Bytes hexadecimal:        67         1A
+
